@@ -2,6 +2,7 @@ package sky.cicd.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import sky.cicd.common.domain.BaseTimeEntity;
@@ -19,4 +20,14 @@ public class Board extends BaseTimeEntity {
 
     private String content;
 
+    @Builder
+    public Board(String title, String content) {
+        this.title = title;
+        this.content = content;
+    }
+
+    public void update(String title, String content) {
+        this.title = title;
+        this.content = content;
+    }
 }

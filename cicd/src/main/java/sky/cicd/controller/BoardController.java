@@ -6,13 +6,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import sky.cicd.common.api.ApiResponse;
 import sky.cicd.common.api.SuccessCode;
+import sky.cicd.dto.BoardCreateRequest;
 import sky.cicd.dto.BoardResponse;
+import sky.cicd.dto.BoardUpdateRequest;
+import sky.cicd.entity.Board;
 import sky.cicd.service.BoardService;
 
 @RestController
@@ -27,15 +27,24 @@ public class BoardController {
         return ResponseEntity.ok(ApiResponse.success(SuccessCode.SUCCESS, boardService.getAll(pageable)));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<BoardResponse>> getBoardById(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(SuccessCode.SUCCESS, boardService.getBoardById(id)));
+    @GetMapping("/{boardId}")
+    public ResponseEntity<ApiResponse<BoardResponse>> getBoardById(@PathVariable Long boardId) {
+        return ResponseEntity.ok(ApiResponse.success(SuccessCode.SUCCESS, boardService.getBoardById(boardId)));
     }
 
+    @PostMapping
+    public ResponseEntity<ApiResponse<BoardResponse>> createBoard(@RequestBody BoardCreateRequest boardCreateRequest) {
+        return ResponseEntity.ok(ApiResponse.success(SuccessCode.CREATED, boardService.createBoard(boardCreateRequest)));
+    }
 
+    @PutMapping
+    public ResponseEntity<ApiResponse<BoardResponse>> updateBoard(@RequestBody BoardUpdateRequest boardUpdateRequest) {
+        return ResponseEntity.ok(ApiResponse.success(SuccessCode.UPDATED, boardService.updateBoard(boardUpdateRequest)));
+    }
 
-
-
-
-
+    @DeleteMapping("/{boardId}")
+    public ResponseEntity<ApiResponse<Void>> deleteBoardById(@PathVariable Long boardId) {
+        boardService.deleteBoardById(boardId);
+        return ResponseEntity.ok(ApiResponse.success(SuccessCode.DELETED, null));
+    }
  }
