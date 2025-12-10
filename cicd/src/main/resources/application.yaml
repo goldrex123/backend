@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/cicd?allowPublicKeyRetrieval=true&rewriteBatchedStatements=true}
-    username: ${MYSQL_USER:test}
-    password: ${MYSQL_PASSWORD:test}
+    username: ${MYSQL_USER:trustpartner_user}
+    password: ${MYSQL_PASSWORD:trustpartner1234}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 32
