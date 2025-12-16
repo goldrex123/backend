@@ -36,7 +36,7 @@ services:
       - monitoring
 
 
- 
+
 volumes:
   cicd_mysql_data:
 
