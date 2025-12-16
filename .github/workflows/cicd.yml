@@ -48,7 +48,7 @@ jobs:
         key: ${{ secrets.EC2_PRIVATE_KEY }}
         envs: GITHUB_SHA
         script: |
-          cd compose
+          cd /compose
           sudo docker rm -f $(docker ps -qa)
           sudo docker pull ${{secrets.DOCKER_REPO}}
           docker-compose up --build -d
