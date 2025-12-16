@@ -21,7 +21,7 @@ import sky.cicd.service.BoardService;
 public class BoardController {
 
     private final BoardService boardService;
-
+ 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<BoardResponse>>> getAll(@PageableDefault(size = 10, direction = Sort.Direction.DESC, sort = "createdAt") Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.success(SuccessCode.SUCCESS, boardService.getAll(pageable)));
