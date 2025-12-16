@@ -1,13 +1,11 @@
 services:
   db:
-    env_file:
-      - cicd.env
     image: mysql:8.0
     container_name: db
     environment:
       MYSQL_DATABASE: cicd
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_USER: ${SPRING_DATASOURCE_USERNAME}
+      MYSQL_PASSWORD: ${SPRING_DATASOURCE_USERNAME}
       MYSQL_ROOT_PASSWORD: cicd1234
     ports:
       - "3306:3306"
@@ -20,7 +18,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s  # 컨테이너 시작 후 30초 동안은 실패를 무시
+
+  application:
+    container_name: cicd-application
+    image: ${DOCKER_IMAGE_REPO}
+#    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL : ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME : ${SPRING_DATASOURCE_USERNMAME}
+      SPRING_DATASOURCE_PASSWORD : ${SPRING_DATASOURCE_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - monitoring
+
+
 
 volumes:
   cicd_mysql_data:
