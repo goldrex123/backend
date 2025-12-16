@@ -5,7 +5,7 @@ services:
     environment:
       MYSQL_DATABASE: cicd
       MYSQL_USER: ${SPRING_DATASOURCE_USERNAME}
-      MYSQL_PASSWORD: ${SPRING_DATASOURCE_USERNAME}
+      MYSQL_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       MYSQL_ROOT_PASSWORD: cicd1234
     ports:
       - "3306:3306"
@@ -14,7 +14,7 @@ services:
     networks:
       - monitoring
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "portfolio_user", "--password=portfolio1234" ]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${SPRING_DATASOURCE_USERNAME}", "--password=${SPRING_DATASOURCE_PASSWORD}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,7 +27,7 @@ services:
       - "8080:8080"
     environment:
       SPRING_DATASOURCE_URL : ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME : ${SPRING_DATASOURCE_USERNMAME}
+      SPRING_DATASOURCE_USERNAME : ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD : ${SPRING_DATASOURCE_PASSWORD}
     depends_on:
       db:
