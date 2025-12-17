@@ -63,8 +63,7 @@ jobs:
             echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
           fi
 
-
-          sudo docker rm -f $(docker ps -qa)
+          sudo docker rm -f $(docker ps -qa) || true
           sudo docker pull ${IMAGE_NAME}:${IMAGE_TAG}
           sudo docker-compose down -v
           sudo docker-compose up -d
