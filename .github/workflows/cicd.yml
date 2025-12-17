@@ -51,14 +51,13 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_PRIVATE_KEY }}
         script: |
-          docker login -u ${{ secrets.DOCKER_USERNAME}} -p ${{ secrets.DOCKER_PASSWORD }}
+          sudo docker login -u ${{ secrets.DOCKER_USERNAME}} -p ${{ secrets.DOCKER_PASSWORD }}
 
           cd /compose
 
           IMAGE_TAG=${{env.SHORT_SHA}}
 
           echo "${IMAGE_TAG}"
-          echo "${IMAGE_URL}"
 
           if grep -q "^IMAGE_TAG=" .env; then
             sudo sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${IMAGE_TAG}/" .env
