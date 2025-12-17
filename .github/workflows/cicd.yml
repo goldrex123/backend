@@ -51,13 +51,21 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_PRIVATE_KEY }}
         script: |
-
           docker login -u ${{ secrets.DOCKER_USERNAME}} -p ${{ secrets.DOCKER_PASSWORD }}
 
           cd /compose
 
+          export IMAGE_TAG=${{env.SHORT_SHA}}
+
+          if grep -q "^IMAGE_TAG=" .env; then
+            sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${IMAGE_TAG}/" .env
+          else
+            echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
+          fi
+
+
           sudo docker rm -f $(docker ps -qa)
-          sudo docker pull ${IMAGE_NAME}:${SHORT_SHA}
+          sudo docker pull ${IMAGE_NAME}:${IMAGE_TAG}
           sudo docker-compose down -v
-          sudo IMAGE_TAG=${env.SHORT_SHA} docker-compose up -d
+          sudo docker-compose up -d
           sudo docker image prune -f
