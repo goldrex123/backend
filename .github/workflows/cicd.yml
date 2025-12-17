@@ -4,6 +4,9 @@ on:
   push:
     branches: [ "main" ]
 
+env:
+  IMAGE_NAME: ${{secrets.DOCKER_REPO}}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,18 +28,20 @@ jobs:
       run: chmod +x gradlew
       working-directory: ./cicd
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
-
     - name: Build with Gradle Wrapper
       run: ./gradlew build -x test
       working-directory: ./cicd
 
+    - name: Set short SHA
+      run: echo "SHORT_SHA=${GITHUB_SHA:0:8}" >> $GITHUB_ENV
+
     - name: Docker build & push to docker repo
       run: |
         docker login -u ${{ secrets.DOCKER_USERNAME}} -p ${{ secrets.DOCKER_PASSWORD }}
-        docker build -f Dockerfile -t ${{ secrets.DOCKER_REPO }}:${{ github.sha }}
-        docker push ${{ secrets.DOCKER_REPO }}:${{ github.sha }}
+        docker build -t $IMAGE_NAME:latest
+        docker build -t $IMAGE_NAME:$SHORT_SHA
+        docker push $IMAGE_NAME:latest
+        docker push $IMAGE_NAME:$SHORT_SHA
       working-directory: ./cicd
 
     - name: Deploy to server
@@ -46,16 +51,16 @@ jobs:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_PRIVATE_KEY }}
-        envs: GITHUB_SHA
         script: |
 
           docker login -u ${{ secrets.DOCKER_USERNAME}} -p ${{ secrets.DOCKER_PASSWORD }}
 
-          export IMAGE_TAG=${GITHUB_SHA}
-
           cd /compose
+
+          export IMAGE_TAG=${SHORT_SHA}
+
           sudo docker rm -f $(docker ps -qa)
-          sudo docker pull ${{secrets.DOCKER_REPO}}:${IMAGE_TAG}
+          sudo docker pull ${IMAGE_NAME}:${SHORT_SHA}
           sudo docker-compose down -v
           sudo docker-compose up -d
           sudo docker image prune -f
