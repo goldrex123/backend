@@ -67,7 +67,7 @@ jobs:
             echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
           fi
 
-          sudo docker rm -f $(sudo docker ps -qa) || true
+          docker ps -qa | xargs -r sudo docker rm -f
 
           sudo docker pull ${IMAGE_URL}:${IMAGE_TAG}
 
