@@ -56,7 +56,7 @@ jobs:
 
           cd /compose
 
-          export IMAGE_TAG=${SHORT_SHA}
+          echo "IMAGE_TAG=${{env.SHORT_SHA}}" >> .env
 
           sudo docker rm -f $(docker ps -qa)
           sudo docker pull ${IMAGE_NAME}:${SHORT_SHA}
