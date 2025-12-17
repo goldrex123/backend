@@ -56,7 +56,6 @@ jobs:
           cd /compose
 
           IMAGE_TAG=${{env.SHORT_SHA}}
-          IMAGE_URL=${{env.IMAGE_NAME}}
 
           echo "${IMAGE_TAG}"
           echo "${IMAGE_URL}"
@@ -69,7 +68,7 @@ jobs:
 
           docker ps -qa | xargs -r sudo docker rm -f
 
-          sudo docker pull ${IMAGE_URL}:${IMAGE_TAG}
+          sudo docker-compose pull
 
           sudo docker-compose up -d
 
