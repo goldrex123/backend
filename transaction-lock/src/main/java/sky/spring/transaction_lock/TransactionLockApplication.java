@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class TransactionLockApplication {
 
 	public static void main(String[] args) {
+		System.out.println("Hello World");
 		SpringApplication.run(TransactionLockApplication.class, args);
 	}
 
