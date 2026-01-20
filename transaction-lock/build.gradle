@@ -33,6 +33,14 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	testImplementation 'org.testcontainers:testcontainers:1.19.6'
+	testImplementation 'org.testcontainers:junit-jupiter:1.19.6'
+	testImplementation 'org.testcontainers:mysql:1.19.6'
+
+	// 테스트에서 Lombok 사용을 위한 의존성 추가
+	testCompileOnly 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 tasks.named('test') {
