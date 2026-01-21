@@ -37,4 +37,22 @@ public class EventWithLockService {
 
         eventWithLockParticipantRepository.save(participant);
     }
+
+    @Transactional
+    public void joinEventOptimistic(Long eventId, Long memberId) {
+        EventWithLock event = eventWithLockRepository.findByIdOptimisticLock(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("이벤트를 찾을 수 없습니다"));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        event.increaseParticipants();
+        eventWithLockRepository.flush();
+
+        EventWithLockParticipant participant = EventWithLockParticipant.builder()
+                .event(event)
+                .member(member)
+                .build();
+
+        eventWithLockParticipantRepository.save(participant);
+    }
 }

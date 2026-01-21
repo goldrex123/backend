@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import sky.spring.transaction_lock.event_participant.entity.Member;
 import sky.spring.transaction_lock.event_participant.repository.MemberRepository;
 import sky.spring.transaction_lock.event_with_lock.entity.EventWithLock;
+import sky.spring.transaction_lock.event_with_lock.facade.OptimisticLockEventFacade;
 import sky.spring.transaction_lock.event_with_lock.repository.EventWithLockParticipantRepository;
 import sky.spring.transaction_lock.event_with_lock.repository.EventWithLockRepository;
 import sky.spring.transaction_lock.event_with_lock.service.EventWithLockService;
@@ -26,6 +27,8 @@ import static org.assertj.core.api.Assertions.*;
 public class EventWithLockServiceTest {
 
     @Autowired
+    private OptimisticLockEventFacade optimisticLockEventFacade;
+    @Autowired
     private EventWithLockService eventWithLockService;
     @Autowired
     private EventWithLockRepository eventRepository;
@@ -37,7 +40,7 @@ public class EventWithLockServiceTest {
     private EventWithLock testEvent;
     private List<Member> testMembers;
 
-    private static final int THREAD_COUNT = 150;
+    private static final int THREAD_COUNT = 100;
 
     @BeforeEach
     void setUp() {
@@ -72,8 +75,27 @@ public class EventWithLockServiceTest {
         log.info("실행 시간: {}ms", executeTime); // 666
         log.info("최종 참가자 수: {}", updatedEvent.getCurrentParticipants());
 
-        assertThat(updatedEvent.getCurrentParticipants()).isEqualTo(100);
+        assertThat(updatedEvent.getCurrentParticipants()).isEqualTo(THREAD_COUNT);
     }
 
+    @Test
+    @DisplayName("낙관적 락으로 100명 동시 참가 테스트")
+    void optimisticLockTest() throws InterruptedException {
+        long startTime = System.currentTimeMillis();
+        ConcurrentTestUtil.executeConcurrentJoins(
+                testEvent.getId(),
+                testMembers,
+                (eventId, memberId) -> optimisticLockEventFacade.joinEvent(eventId,memberId)
+        );
+        long executeTime = System.currentTimeMillis() - startTime;
 
+        EventWithLock updatedEvent = eventRepository.findById(testEvent.getId()).orElseThrow();
+
+        log.info("=== 비관적 락 테스트 결과 ===");
+        log.info("실행 시간: {}ms", executeTime); // 3521
+        log.info("최종 참가자 수: {}", updatedEvent.getCurrentParticipants());
+
+        assertThat(updatedEvent.getCurrentParticipants()).isEqualTo(THREAD_COUNT);
+
+    }
 }

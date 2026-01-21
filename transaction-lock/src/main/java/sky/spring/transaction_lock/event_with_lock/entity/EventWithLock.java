@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DialectOverride;
 
 import java.time.LocalDateTime;
 
@@ -22,6 +23,9 @@ public class EventWithLock {
     private LocalDateTime eventDate;
     private int maxParticipants;
     private int currentParticipants;
+
+    @Version
+    private Long version;
 
     @Builder
     public EventWithLock(String name, String description, LocalDateTime eventDate, int maxParticipants) {
