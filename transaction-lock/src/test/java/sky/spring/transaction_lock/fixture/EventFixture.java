@@ -1,9 +1,12 @@
-package sky.spring.transaction_lock.event.fixture;
+package sky.spring.transaction_lock.fixture;
 
 import sky.spring.transaction_lock.event.entity.Event;
+import sky.spring.transaction_lock.event_participant.entity.Member;
+import sky.spring.transaction_lock.event_participant.entity.Role;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -24,4 +27,19 @@ public class EventFixture {
                 .collect(Collectors.toList());
     }
 
+
+    public static Member createMember(String nickname) {
+        return Member.builder()
+                .email("test" + UUID.randomUUID() + "@test.com")
+                .password("password")
+                .nickname(nickname == null ? "테스트 유저" : nickname)
+                .role(Role.USER)
+                .build();
+    }
+
+    public static List<Member> createMembers(int count) {
+        return IntStream.range(0, count)
+                .mapToObj(i -> createMember("테스트유저" + i))
+                .collect(Collectors.toList());
+    }
 }

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import sky.spring.transaction_lock.event.entity.Event;
-import sky.spring.transaction_lock.event.fixture.EventFixture;
+import sky.spring.transaction_lock.fixture.EventFixture;
 import sky.spring.transaction_lock.event.repository.EventRepository;
 import sky.spring.transaction_lock.event.service.Event1Service;
 
