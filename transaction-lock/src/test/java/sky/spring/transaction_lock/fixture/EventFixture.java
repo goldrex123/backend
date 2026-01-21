@@ -3,6 +3,7 @@ package sky.spring.transaction_lock.fixture;
 import sky.spring.transaction_lock.event.entity.Event;
 import sky.spring.transaction_lock.event_participant.entity.Member;
 import sky.spring.transaction_lock.event_participant.entity.Role;
+import sky.spring.transaction_lock.event_with_lock.entity.EventWithLock;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +25,21 @@ public class EventFixture {
     public static List<Event> createEvents(int count) {
         return IntStream.range(0, count)
                 .mapToObj(i -> createEvent("테스트 이벤트" + i, 100))
+                .collect(Collectors.toList());
+    }
+
+    public static EventWithLock createEventWithLock(String name, int maxParticipant) {
+        return EventWithLock.builder()
+                .name(name == null ? "테스트 이벤트" : name)
+                .description("테스트 설명")
+                .eventDate(LocalDateTime.now().plusDays(7))
+                .maxParticipants(maxParticipant > 0 ? maxParticipant : 100)
+                .build();
+    }
+
+    public static List<EventWithLock> createEventWithLocks(int count) {
+        return IntStream.range(0, count)
+                .mapToObj(i -> createEventWithLock("테스트 이벤트" + i, 100))
                 .collect(Collectors.toList());
     }
 
