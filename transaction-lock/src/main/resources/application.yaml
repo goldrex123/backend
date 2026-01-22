@@ -5,7 +5,7 @@ spring:
     password: test1234
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
-#      maximum-pool-size: 32
+      maximum-pool-size: 32
 #      maximum-pool-size: 64 - Named lock 용 커넥션 풀 사이즈
 
 

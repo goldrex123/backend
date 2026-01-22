@@ -24,13 +24,16 @@ public class EventWithLockParticipant {
     @JoinColumn(name = "member_id")
     private Member member;
 
+    @Column(name = "external_id")
+    private String externalId;
+
     @Builder
     public EventWithLockParticipant(EventWithLock event, Member member) {
         this.event = event;
         this.member = member;
     }
 
-//    public void updateExternalId(String externalId) {
-//        this.externalId = externalId;
-//    }
+    public void updateExternalId(String externalId) {
+        this.externalId = externalId;
+    }
 } 

@@ -4,6 +4,7 @@ import sky.spring.transaction_lock.event.entity.Event;
 import sky.spring.transaction_lock.event_participant.entity.Member;
 import sky.spring.transaction_lock.event_participant.entity.Role;
 import sky.spring.transaction_lock.event_with_lock.entity.EventWithLock;
+import sky.spring.transaction_lock.event_with_lock.entity.EventWithLockParticipant;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -56,6 +57,19 @@ public class EventFixture {
     public static List<Member> createMembers(int count) {
         return IntStream.range(0, count)
                 .mapToObj(i -> createMember("테스트유저" + i))
+                .collect(Collectors.toList());
+    }
+
+    public static EventWithLockParticipant createTestParticipant(EventWithLock event, Member member) {
+        return EventWithLockParticipant.builder()
+                .event(event)
+                .member(member)
+                .build();
+    }
+
+    public static List<EventWithLockParticipant> createTestParticipants(EventWithLock event, List<Member> members) {
+        return members.stream()
+                .map(member -> createTestParticipant(event, member))
                 .collect(Collectors.toList());
     }
 }
