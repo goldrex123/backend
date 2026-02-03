@@ -47,5 +47,5 @@ docs/**
 .mcp.json
 shrimp-rules.md
 
-shrimp_data/**
+./shrimp_data
 README.md
