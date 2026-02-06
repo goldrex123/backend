@@ -50,6 +50,81 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 결제 정보 미존재 처리 (404)
+     *
+     * 존재하지 않는 orderId 또는 paymentKey로 결제를 조회할 때 발생합니다.
+     *
+     * @param e PaymentNotFoundException
+     * @return 404 NOT_FOUND 응답
+     */
+    @ExceptionHandler(PaymentNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePaymentNotFoundException(
+            PaymentNotFoundException e
+    ) {
+        log.warn("결제 정보를 찾을 수 없음: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error("PAYMENT_NOT_FOUND", e.getMessage()));
+    }
+
+    /**
+     * 잘못된 결제 상태 처리 (400)
+     *
+     * 비즈니스 규칙상 허용되지 않는 상태 전이를 시도할 때 발생합니다.
+     * 예: 이미 승인된 결제를 재승인, 취소된 결제를 승인 등
+     *
+     * @param e InvalidPaymentStateException
+     * @return 400 BAD_REQUEST 응답
+     */
+    @ExceptionHandler(InvalidPaymentStateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidPaymentStateException(
+            InvalidPaymentStateException e
+    ) {
+        log.warn("잘못된 결제 상태: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("INVALID_PAYMENT_STATE", e.getMessage()));
+    }
+
+    /**
+     * 결제 금액 불일치 처리 (400)
+     *
+     * 클라이언트가 요청한 금액과 서버에 저장된 금액이 다를 때 발생합니다.
+     * 결제 위변조 방지를 위한 필수 검증입니다.
+     *
+     * @param e PaymentAmountMismatchException
+     * @return 400 BAD_REQUEST 응답
+     */
+    @ExceptionHandler(PaymentAmountMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePaymentAmountMismatchException(
+            PaymentAmountMismatchException e
+    ) {
+        log.warn("결제 금액 불일치: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("PAYMENT_AMOUNT_MISMATCH", e.getMessage()));
+    }
+
+    /**
+     * 중복 결제 시도 처리 (409)
+     *
+     * 동일한 orderId로 이미 결제가 생성되어 있을 때 발생합니다.
+     * 멱등성 보장을 위한 필수 검증입니다.
+     *
+     * @param e DuplicatePaymentException
+     * @return 409 CONFLICT 응답
+     */
+    @ExceptionHandler(DuplicatePaymentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicatePaymentException(
+            DuplicatePaymentException e
+    ) {
+        log.warn("중복 결제 시도: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error("DUPLICATE_PAYMENT", e.getMessage()));
+    }
+
+    /**
      * 일반 예외 처리 (Fallback)
      *
      * 위의 특정 예외 핸들러에서 처리되지 않은 모든 예외를 처리합니다.
