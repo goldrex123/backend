@@ -5,22 +5,28 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sky.spring.pg.common.exception.DuplicatePaymentException;
+import sky.spring.pg.common.exception.InvalidCancelAmountException;
 import sky.spring.pg.common.exception.InvalidPaymentStateException;
 import sky.spring.pg.common.exception.PaymentAmountMismatchException;
 import sky.spring.pg.common.exception.PaymentNotFoundException;
 import sky.spring.pg.common.util.JsonUtil;
 import sky.spring.pg.domain.payment.entity.Payment;
+import sky.spring.pg.domain.payment.entity.PaymentCancel;
 import sky.spring.pg.domain.payment.entity.PaymentHistory;
 import sky.spring.pg.domain.payment.entity.enums.PaymentEventType;
 import sky.spring.pg.domain.payment.entity.enums.PaymentStatus;
+import sky.spring.pg.domain.payment.repository.PaymentCancelRepository;
 import sky.spring.pg.domain.payment.repository.PaymentHistoryRepository;
 import sky.spring.pg.domain.payment.repository.PaymentRepository;
 import sky.spring.pg.infrastructure.pg.toss.dto.response.TossPaymentResponse;
 import sky.spring.pg.presentation.dto.request.PaymentPrepareRequest;
 import sky.spring.pg.presentation.dto.response.PaymentApproveResponse;
+import sky.spring.pg.presentation.dto.response.PaymentCancelResponse;
 import sky.spring.pg.presentation.dto.response.PaymentPrepareResponse;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.Optional;
 
 /**
@@ -36,6 +42,7 @@ import java.util.Optional;
 public class PaymentService {
 
   private final PaymentRepository paymentRepository;
+  private final PaymentCancelRepository paymentCancelRepository;
   private final PaymentHistoryRepository paymentHistoryRepository;
   private final JsonUtil jsonUtil;
 
@@ -132,6 +139,107 @@ public class PaymentService {
     saveHistory(payment, PaymentEventType.APPROVE, tossResponse, 200);
 
     return PaymentApproveResponse.from(payment);
+  }
+
+  /**
+   * 결제 취소
+   *
+   * 결제를 취소하고 취소 이력을 저장합니다.
+   * 비관적 락을 사용하여 동시성을 제어하고, 멱등성을 보장합니다.
+   *
+   * @param orderId 주문 ID
+   * @param cancelAmount 취소 금액
+   * @param cancelReason 취소 사유
+   * @return 결제 취소 응답
+   * @throws PaymentNotFoundException 결제 정보가 없는 경우
+   * @throws InvalidPaymentStateException 취소 가능한 상태가 아닌 경우
+   * @throws InvalidCancelAmountException 취소 가능 금액을 초과한 경우
+   */
+  @Transactional
+  public PaymentCancelResponse cancelPayment(
+      String orderId,
+      BigDecimal cancelAmount,
+      String cancelReason
+  ) {
+    // 1. 비관적 락으로 Payment 조회 (동시성 제어)
+    Payment payment = paymentRepository.findByOrderIdWithLock(orderId)
+        .orElseThrow(() -> new PaymentNotFoundException(
+            String.format("결제 정보를 찾을 수 없습니다. orderId: %s", orderId)
+        ));
+
+    // 2. 멱등성 체크 (이미 전액 취소된 경우)
+    if (payment.getStatus() == PaymentStatus.CANCELED) {
+      log.info("이미 전액 취소된 결제 - orderId: {}", orderId);
+      // 가장 최근 취소 이력 반환
+      PaymentCancel lastCancel = payment.getCancels().stream()
+          .max(Comparator.comparing(PaymentCancel::getCanceledAt))
+          .orElseThrow();
+      return PaymentCancelResponse.from(payment, lastCancel);
+    }
+
+    // 3. 상태 검증 (DONE 또는 PARTIAL_CANCELED만 취소 가능)
+    if (payment.getStatus() != PaymentStatus.DONE &&
+        payment.getStatus() != PaymentStatus.PARTIAL_CANCELED) {
+      throw new InvalidPaymentStateException(
+          String.format("취소 가능한 상태가 아닙니다. 현재 상태: %s", payment.getStatus())
+      );
+    }
+
+    // 4. 취소 가능 금액 검증
+    BigDecimal cancelableAmount = payment.getCancelableAmount();
+    if (cancelAmount.compareTo(cancelableAmount) > 0) {
+      throw new InvalidCancelAmountException(
+          String.format("취소 가능 금액을 초과했습니다. 요청: %s, 가능: %s",
+              cancelAmount, cancelableAmount)
+      );
+    }
+
+    // 5. PaymentCancel 엔티티 생성 및 저장
+    PaymentCancel cancel = PaymentCancel.builder()
+        .payment(payment)
+        .cancelAmount(cancelAmount)
+        .cancelReason(cancelReason)
+        .canceledAt(LocalDateTime.now())
+        .build();
+
+    paymentCancelRepository.save(cancel);
+    payment.addCancel(cancel);
+    log.info("결제 취소 이력 저장 완료 - orderId: {}, cancelAmount: {}",
+        orderId, cancelAmount);
+
+    // 6. Payment 상태 업데이트
+    BigDecimal newTotalCancelAmount = payment.getTotalCancelAmount();
+    if (newTotalCancelAmount.compareTo(payment.getAmount()) == 0) {
+      payment.cancel();  // 전액 취소
+      log.info("전액 취소 완료 - orderId: {}", orderId);
+    } else {
+      payment.partialCancel();  // 부분 취소
+      log.info("부분 취소 완료 - orderId: {}, 남은 금액: {}",
+          orderId, payment.getCancelableAmount());
+    }
+
+    // 7. 이력 저장
+    saveHistory(payment, PaymentEventType.CANCEL, cancel, 200);
+
+    return PaymentCancelResponse.from(payment, cancel);
+  }
+
+  /**
+   * 주문 ID로 결제 조회
+   *
+   * 주문 ID를 사용하여 결제 정보를 조회합니다.
+   * 주로 Facade에서 paymentKey를 얻기 위해 사용됩니다.
+   *
+   * @param orderId 주문 ID
+   * @return 결제 엔티티
+   * @throws PaymentNotFoundException 결제 정보가 없는 경우
+   */
+  @Transactional(readOnly = true)
+  public Payment getPaymentByOrderId(String orderId) {
+    return paymentRepository.findByOrderId(orderId)
+        .orElseThrow(() -> new PaymentNotFoundException(
+            String.format("결제 정보를 찾을 수 없습니다. orderId: %s", orderId)
+        ));
   }
 
   /**
