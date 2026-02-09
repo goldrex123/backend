@@ -112,10 +112,10 @@ public class TossPaymentClient {
     }
 
     /**
-     * 결제 취소 요청
+     * 결제 취소 요청 (전액 취소)
      *
-     * 승인된 결제를 취소하는 API입니다.
-     * 부분 취소는 지원하지 않으며, 전액 취소만 가능합니다.
+     * 승인된 결제를 전액 취소하는 API입니다.
+     * 내부적으로 cancelAmount를 null로 전달하여 전액 취소를 처리합니다.
      *
      * 재시도 정책:
      * - PaymentServerException(5xx 서버 오류)와 네트워크 오류 시 최대 3회 재시도
@@ -134,11 +134,39 @@ public class TossPaymentClient {
             backoff = @Backoff(delay = 2000)
     )
     public TossCancelResponse cancelPayment(String paymentKey, String cancelReason) {
-        log.info("결제 취소 요청 시작 - paymentKey: {}, cancelReason: {}",
-                paymentKey, cancelReason);
+        return cancelPayment(paymentKey, null, cancelReason);
+    }
+
+    /**
+     * 결제 취소 요청 (전액/부분 취소 지원)
+     *
+     * 승인된 결제를 취소하는 API입니다.
+     * cancelAmount가 null이면 전액 취소, 값이 있으면 해당 금액만큼 부분 취소를 처리합니다.
+     *
+     * 재시도 정책:
+     * - PaymentServerException(5xx 서버 오류)와 네트워크 오류 시 최대 3회 재시도
+     * - 재시도 간격: 2초
+     * - PaymentClientException(4xx 오류)는 재시도하지 않음
+     *
+     * @param paymentKey 취소할 결제의 결제 키
+     * @param cancelAmount 취소 금액 (null이면 전액 취소, 값이 있으면 부분 취소)
+     * @param cancelReason 취소 사유 (예: "고객 요청", "품절")
+     * @return 취소 결과 정보
+     * @throws PaymentClientException 4xx 오류 (이미 취소된 결제, 취소 불가능한 상태 등)
+     * @throws PaymentServerException 5xx 오류 (PG사 서버 장애)
+     */
+    @Retryable(
+            retryFor = {PaymentServerException.class, WebClientRequestException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 2000)
+    )
+    public TossCancelResponse cancelPayment(String paymentKey, BigDecimal cancelAmount, String cancelReason) {
+        log.info("결제 취소 요청 시작 - paymentKey: {}, cancelAmount: {}, cancelReason: {}",
+                paymentKey, cancelAmount, cancelReason);
 
         // 요청 DTO 생성
         TossCancelRequest request = TossCancelRequest.builder()
+                .cancelAmount(cancelAmount)
                 .cancelReason(cancelReason)
                 .build();
 
