@@ -106,6 +106,26 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 취소 금액 초과 처리 (400)
+     *
+     * 취소 가능한 금액을 초과하여 취소를 요청할 때 발생합니다.
+     * 부분 취소 시 남은 금액보다 큰 금액으로 취소를 시도하거나,
+     * 이미 전액 취소된 결제를 다시 취소하려는 경우입니다.
+     *
+     * @param e InvalidCancelAmountException
+     * @return 400 BAD_REQUEST 응답
+     */
+    @ExceptionHandler(InvalidCancelAmountException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidCancelAmountException(
+            InvalidCancelAmountException e
+    ) {
+        log.warn("취소 금액 초과: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("INVALID_CANCEL_AMOUNT", e.getMessage()));
+    }
+
+    /**
      * 중복 결제 시도 처리 (409)
      *
      * 동일한 orderId로 이미 결제가 생성되어 있을 때 발생합니다.
