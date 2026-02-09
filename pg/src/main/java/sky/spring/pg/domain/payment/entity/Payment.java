@@ -11,6 +11,8 @@ import sky.spring.pg.domain.payment.entity.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "payments")
@@ -63,6 +65,10 @@ public class Payment extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String failReason;
 
+    // 취소 이력 (양방향 관계)
+    @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PaymentCancel> cancels = new ArrayList<>();
+
     // 비즈니스 로직 메서드
     public void approve(String paymentKey, LocalDateTime approvedAt) {
         this.paymentKey = paymentKey;
@@ -82,6 +88,46 @@ public class Payment extends BaseEntity {
 
     public void partialCancel() {
         this.status = PaymentStatus.PARTIAL_CANCELED;
+    }
+
+    /**
+     * 총 취소 금액 계산
+     *
+     * 모든 취소 이력의 금액을 합산하여 반환합니다.
+     * 취소 이력이 없는 경우 0을 반환합니다.
+     *
+     * @return 총 취소 금액
+     */
+    public BigDecimal getTotalCancelAmount() {
+        if (cancels.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        return cancels.stream()
+                .map(PaymentCancel::getCancelAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * 취소 가능 금액 계산
+     *
+     * 원 결제 금액에서 총 취소 금액을 뺀 나머지 금액을 반환합니다.
+     *
+     * @return 취소 가능 금액
+     */
+    public BigDecimal getCancelableAmount() {
+        return amount.subtract(getTotalCancelAmount());
+    }
+
+    /**
+     * 취소 이력 추가
+     *
+     * PaymentCancel을 취소 이력 리스트에 추가합니다.
+     * 양방향 관계는 PaymentCancel 생성 시 이미 설정되므로 별도 동기화가 불필요합니다.
+     *
+     * @param cancel 추가할 취소 이력
+     */
+    public void addCancel(PaymentCancel cancel) {
+        cancels.add(cancel);
     }
 
     @Builder
