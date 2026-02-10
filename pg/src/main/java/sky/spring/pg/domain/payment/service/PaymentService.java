@@ -243,6 +243,58 @@ public class PaymentService {
   }
 
   /**
+   * 웹훅 이벤트 처리
+   *
+   * 토스페이먼츠로부터 받은 결제 상태 변경 웹훅을 처리합니다.
+   * 멱등성을 보장하며, 중복 웹훅은 무시됩니다.
+   *
+   * @param request 웹훅 요청
+   */
+  @Transactional
+  public void handlePaymentStatusChanged(sky.spring.pg.infrastructure.pg.toss.dto.request.TossWebhookRequest request) {
+    // 1. 데이터 추출
+    String paymentKey = request.getData().getPaymentKey();
+    String status = request.getData().getStatus();
+
+    // 2. Payment 조회
+    Optional<Payment> paymentOpt = paymentRepository.findByPaymentKey(paymentKey);
+    if (paymentOpt.isEmpty()) {
+      log.warn("웹훅 수신했으나 Payment 없음 - paymentKey: {}", paymentKey);
+      return;
+    }
+
+    Payment payment = paymentOpt.get();
+
+    // 3. 상태별 처리
+    switch (status) {
+      case "DONE":
+        // 멱등성 체크 (이미 DONE 상태면 스킵)
+        if (payment.getStatus() == PaymentStatus.DONE) {
+          log.info("이미 처리된 웹훅 - paymentKey: {}, status: {}", paymentKey, payment.getStatus());
+          return;
+        }
+        payment.approve(paymentKey, request.getData().getApprovedAt());
+        saveHistory(payment, PaymentEventType.WEBHOOK_PAYMENT_DONE, request, null);
+        log.info("웹훅으로 결제 승인 완료 - paymentKey: {}, orderId: {}", paymentKey, payment.getOrderId());
+        break;
+
+      case "CANCELED":
+        // 멱등성 체크 (이미 CANCELED 상태면 스킵)
+        if (payment.getStatus() == PaymentStatus.CANCELED) {
+          log.info("이미 처리된 웹훅 - paymentKey: {}, status: {}", paymentKey, payment.getStatus());
+          return;
+        }
+        payment.cancel();
+        saveHistory(payment, PaymentEventType.WEBHOOK_PAYMENT_CANCELED, request, null);
+        log.info("웹훅으로 결제 취소 완료 - paymentKey: {}, orderId: {}", paymentKey, payment.getOrderId());
+        break;
+
+      default:
+        log.warn("알 수 없는 결제 상태 - paymentKey: {}, status: {}", paymentKey, status);
+    }
+  }
+
+  /**
    * 결제 이력 저장
    *
    * 결제 관련 이벤트를 PaymentHistory에 기록합니다.
