@@ -54,4 +54,25 @@ class BookServiceTest {
         bookService.findBookById(bookId);
         bookService.findBookById(book.getId());
     }
+
+    @DisplayName("캐시 name 테스트")
+    @Test
+    void cacheNameTest() {
+        Long bookId = book.getId();
+
+        bookService.findBookById(bookId);
+        bookService.findBookNameById(bookId);
+    }
+
+    @DisplayName("캐시 key 테스트")
+    @Test
+    void cacheKeyTest() {
+        Long bookId = book.getId();
+        String name = book.getName();
+
+        Book book1 = bookService.findBookByIdAndName(bookId, name);
+        System.out.println("book1 = " + book1);
+        Book book2 = bookService.findBookByIdAndName(bookId, name + "가 아님");
+        System.out.println("book2 = " + book2);
+    }
 }

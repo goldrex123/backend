@@ -17,4 +17,16 @@ public class BookService {
         log.info("findBookById가 실행됩니다");
         return bookRepository.findById(id).orElseThrow();
     }
+
+    @Cacheable(value = "bookName")
+    public Book findBookNameById(Long id) {
+        log.info("findBookNameById가 실행됩니다.");
+        return bookRepository.findById(id).orElse(null);
+    }
+
+    @Cacheable(value = "bookIdAndName", key = "#id")
+    public Book findBookByIdAndName(Long id, String name) {
+        log.info("findBookByIdAndName가 실행됩니다");
+        return bookRepository.findByIdAndName(id, name).orElseThrow();
+    }
 }
