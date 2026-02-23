@@ -7,6 +7,10 @@ spring:
     hikari:
       maximum-pool-size: 32
 
+  data:
+    redis:
+      host: localhost
+      port: 2000
 
   jpa:
     hibernate:

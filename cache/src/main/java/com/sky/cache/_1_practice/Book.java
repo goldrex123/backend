@@ -17,12 +17,11 @@ public class Book {
     private String name;
 
     @Column(nullable = false)
-    private boolean isSoldOut;
+    private boolean soldOut;
 
     @Builder
-
-    public Book(String name, boolean isSoldOut) {
+    public Book(String name, boolean soldOut) {
         this.name = name;
-        this.isSoldOut = isSoldOut;
+        this.soldOut = soldOut;
     }
 }

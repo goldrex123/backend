@@ -30,7 +30,7 @@ class BookServiceTest {
     void setUp() {
         Book book = Book.builder()
                 .name("테스트")
-                .isSoldOut(false)
+                .soldOut(false)
                 .build();
 
         bookRepository.save(book);
